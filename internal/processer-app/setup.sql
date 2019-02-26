@@ -1,5 +1,5 @@
 create table Users(
-    id int primary key,
+    id serial primary key,
     email varchar(255) not null,
     password text
 );
