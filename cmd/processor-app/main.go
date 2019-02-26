@@ -21,7 +21,35 @@ type Users struct{
 }
 
 // Login Handler
-func loginHandler(w http.ResponseWriter, r *http.Request){}
+func loginHandler(w http.ResponseWriter, r *http.Request){
+	usr := &Users{}
+
+	usr.email = r.PostFormValue("email")
+	usr.password =r.PostFormValue("password")
+
+	// Query the database
+	userQueryResults:= Db.QueryRow("select password from users where email=$1",usr.email)
+	
+
+	// New instance for users
+	storedUserCred := &Users{}
+
+	err := userQueryResults.Scan(&storedUserCred.password)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		log.Println("Login Handler Error scanning user results: ",err)
+		return
+	}
+
+
+	err = bcrypt.CompareHashAndPassword([]byte(storedUserCred.password),[]byte(usr.password))
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	w.Write([]byte("Welcome in"))
+
+}
 
 // Signup Handler
 func signupHandler(w http.ResponseWriter, r *http.Request){
@@ -38,7 +66,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request){
 	_,err =Db.Query("insert into Users (email,password) values($1,$2)",usr.email,string(hashedPassword))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Error signupHandler:",err)
+		log.Println("Error signupHandler:",err)
 		return
 	}
 
@@ -68,7 +96,7 @@ func main(){
 	router.HandleFunc("/signup",signupHandler)
 
 	server:= http.Server{
-		Addr:"127.0.0.1:8000",
+		Addr:"127.0.0.1:8090",
 		Handler:router,
 	}
 
