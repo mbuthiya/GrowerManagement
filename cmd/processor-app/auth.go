@@ -6,6 +6,8 @@ import(
 	"database/sql"
 	"golang.org/x/crypto/bcrypt"
 	_"github.com/lib/pq"
+	"github.com/satori/go.uuid"
+	"time"
 	
 )
 
@@ -14,12 +16,12 @@ var Db *sql.DB
 func loginWithEmail(w http.ResponseWriter, usr Users) (error){
 
 	// Query the database
-	userQueryResults:= Db.QueryRow("select password from users where email=$1",usr.email)
+	userQueryResults:= Db.QueryRow("select id,password from users where email=$1",usr.email)
 
 	// New instance for users
 	storedUserCred := &Users{}
-
-	err := userQueryResults.Scan(&storedUserCred.password)
+	
+	err := userQueryResults.Scan(&storedUserCred.id,&storedUserCred.password)
 	if err != nil {
 		return err
 	}
@@ -27,10 +29,23 @@ func loginWithEmail(w http.ResponseWriter, usr Users) (error){
 	// Compare hash and password
 	err = bcrypt.CompareHashAndPassword([]byte(storedUserCred.password),[]byte(usr.password))
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
 		return err
 	}
-		
+	
+	// Setting up redis session
+	sessionToken := uuid.Must(uuid.NewV4()).String()
+	
+	_,err =cache.Do("SETEX",sessionToken,"86400",storedUserCred.id)
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    "session_token",
+		Value:   sessionToken,
+		Expires: time.Now().Add(86400 * time.Second),
+	})
+
 	return nil
 }
 
