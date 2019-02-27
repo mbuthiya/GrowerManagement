@@ -49,7 +49,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request){
 
 		err:=loginWithEmail(w,*usr)
 		if err != nil {
-			log.Println("Error")
+			log.Println("Error") //Todo redirect path with status error
 		}
 		http.Redirect(w,r,BaseURL+"/welcome",http.StatusSeeOther)
 	}
@@ -85,7 +85,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request){
 
 		err:=signUpWithEmail(w,*usr)
 		if err != nil {
-			log.Println("Error")
+			log.Println("Error") //Todo redirect path with status error
 		}
 		http.Redirect(w,r,BaseURL+"/welcome",http.StatusSeeOther)
 	}
@@ -94,6 +94,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request){
 }
 
 func welcomePageHandler(w http.ResponseWriter, r *http.Request){
+	// Todo update checkcookie checker
 	baseTemplates,_:= os.Getwd()
 	t,_ := template.ParseFiles(baseTemplates+"/templates/welcome.html")
 	t.Execute(w,nil)
